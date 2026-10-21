@@ -1,38 +1,44 @@
+from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from database import get_db
 import model
+import schemas
 from router.auth import get_current_user
 
 router = APIRouter(prefix="/doctors", tags=["Doctors"])
 
 
-# CREATE - Protected route (requires valid JWT token)
-@router.post("/", status_code=status.HTTP_201_CREATED)
+# 1. CREATE - Protected route (JSON body validation)
+@router.post(
+    "/",
+    response_model=schemas.DoctorResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 def create_doctor(
-    name: str,
-    specialization: str,
-    phone: str,
+    doctor: schemas.DoctorCreate,
     db: Session = Depends(get_db),
     current_user: model.User = Depends(get_current_user),
 ):
-    doctor = model.Doctor(name=name, specialization=specialization, phone=phone)
-    db.add(doctor)
+    db_doctor = model.Doctor(**doctor.model_dump())
+    db.add(db_doctor)
     db.commit()
-    db.refresh(doctor)
-    return doctor
+    db.refresh(db_doctor)
+    return db_doctor
 
 
-# READ ALL - Public route (retrieve list of all doctors)
-@router.get("/")
+# 2. READ ALL - Public route
+@router.get("/", response_model=List[schemas.DoctorResponse])
 def get_doctors(db: Session = Depends(get_db)):
     return db.query(model.Doctor).all()
 
 
-# READ ONE - Public route (retrieve a specific doctor by ID)
-@router.get("/{doctor_id}")
+# 3. READ ONE - Public route
+@router.get("/{doctor_id}", response_model=schemas.DoctorResponse)
 def get_doctor(doctor_id: int, db: Session = Depends(get_db)):
-    doctor = db.query(model.Doctor).filter(model.Doctor.id == doctor_id).first()
+    doctor = (
+        db.query(model.Doctor).filter(model.Doctor.id == doctor_id).first()
+    )
     if not doctor:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Doctor not found"
@@ -40,38 +46,40 @@ def get_doctor(doctor_id: int, db: Session = Depends(get_db)):
     return doctor
 
 
-#UPDATE - Protected route (requires valid JWT token)
-@router.put("/{doctor_id}")
+# 4. UPDATE - Protected route (JSON body validation)
+@router.put("/{doctor_id}", response_model=schemas.DoctorResponse)
 def update_doctor(
     doctor_id: int,
-    name: str,
-    specialization: str,
-    phone: str,
+    doctor_update: schemas.DoctorCreate,
     db: Session = Depends(get_db),
     current_user: model.User = Depends(get_current_user),
 ):
-    doctor = db.query(model.Doctor).filter(model.Doctor.id == doctor_id).first()
-    if not doctor:
+    db_doctor = (
+        db.query(model.Doctor).filter(model.Doctor.id == doctor_id).first()
+    )
+    if not db_doctor:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Doctor not found"
         )
 
-    doctor.name = name
-    doctor.specialization = specialization
-    doctor.phone = phone
+    for key, value in doctor_update.model_dump().items():
+        setattr(db_doctor, key, value)
+
     db.commit()
-    db.refresh(doctor)
-    return doctor
+    db.refresh(db_doctor)
+    return db_doctor
 
 
-# DELETE - Protected route (requires valid JWT token)
+# 5. DELETE - Protected route
 @router.delete("/{doctor_id}")
 def delete_doctor(
     doctor_id: int,
     db: Session = Depends(get_db),
     current_user: model.User = Depends(get_current_user),
 ):
-    doctor = db.query(model.Doctor).filter(model.Doctor.id == doctor_id).first()
+    doctor = (
+        db.query(model.Doctor).filter(model.Doctor.id == doctor_id).first()
+    )
     if not doctor:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Doctor not found"
@@ -79,4 +87,6 @@ def delete_doctor(
 
     db.delete(doctor)
     db.commit()
-    return {"message": f"Doctor with ID {doctor_id} has been deleted successfully"}
+    return {
+        "message": f"Doctor with ID {doctor_id} has been deleted successfully"
+    }
