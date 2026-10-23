@@ -1,5 +1,5 @@
 from pydantic import BaseModel, ConfigDict
-
+from datetime import datetime
 
 #  USER SCHEMAS 
 class UserCreate(BaseModel):
@@ -52,5 +52,40 @@ class PatientCreate(PatientBase):
 class PatientResponse(PatientBase):
     id: int
     is_deleted: bool
+
+    model_config = ConfigDict(from_attributes=True)
+
+    # --- MEDICAL SERVICE SCHEMAS ---
+class MedicalServiceBase(BaseModel):
+    name: str
+    price: float
+    duration_minutes: int
+
+
+class MedicalServiceCreate(MedicalServiceBase):
+    pass
+
+
+class MedicalServiceResponse(MedicalServiceBase):
+    id: int
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+# --- APPOINTMENT SCHEMAS ---
+class AppointmentBase(BaseModel):
+    patient_id: int
+    doctor_id: int
+    service_id: int
+    appointment_date: datetime
+
+
+class AppointmentCreate(AppointmentBase):
+    pass
+
+
+class AppointmentResponse(AppointmentBase):
+    id: int
+    status: str
 
     model_config = ConfigDict(from_attributes=True)
