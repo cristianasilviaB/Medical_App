@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy import Column, Integer, String, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 from database import Base
 
@@ -30,5 +30,6 @@ class Patient(Base):
     age = Column(Integer)
     disease = Column(String)
     doctor_id = Column(Integer, ForeignKey("doctors.id"))
+    is_deleted = Column(Boolean, default=False) #soft delete flag
 
     doctor = relationship("Doctor", back_populates="patients")

@@ -9,7 +9,7 @@ from router.auth import get_current_user
 router = APIRouter(prefix="/patients", tags=["Patients"])
 
 
-# 1. CREATE - Protected route (JSON body validation)
+# CREATE - Protected route (JSON body validation)
 @router.post(
     "/",
     response_model=schemas.PatientResponse,
@@ -37,24 +37,32 @@ def create_patient(
     return db_patient
 
 
-# 2. READ ALL - Public route
+# READ ALL - Public route
 @router.get("/", response_model=List[schemas.PatientResponse])
 def get_patients(db: Session = Depends(get_db)):
-    return db.query(model.Patient).all()
+    return (
+        db.query(model.Patient)
+        .filter(model.Patient.is_deleted.is_(False))
+        .all()
+    )
 
 
-# 3. READ ONE - Public route
+# READ ONE - Public route
 @router.get("/{patient_id}", response_model=schemas.PatientResponse)
 def get_patient(patient_id: int, db: Session = Depends(get_db)):
     patient = (
-        db.query(model.Patient).filter(model.Patient.id == patient_id).first()
+        db.query(model.Patient)
+        .filter(
+            model.Patient.id == patient_id,
+            model.Patient.is_deleted.is_(False),
+        )
+        .first()
     )
     if not patient:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Patient not found"
         )
     return patient
-
 
 # 4. UPDATE - Protected route (JSON body validation)
 @router.put("/{patient_id}", response_model=schemas.PatientResponse)
@@ -65,7 +73,12 @@ def update_patient(
     current_user: model.User = Depends(get_current_user),
 ):
     db_patient = (
-        db.query(model.Patient).filter(model.Patient.id == patient_id).first()
+        db.query(model.Patient)
+        .filter(
+            model.Patient.id == patient_id,
+            model.Patient.is_deleted.is_(False),
+        )
+        .first()
     )
     if not db_patient:
         raise HTTPException(
@@ -90,7 +103,7 @@ def update_patient(
     return db_patient
 
 
-# 5. DELETE - Protected route
+# SOFT DELETE - Protected route
 @router.delete("/{patient_id}")
 def delete_patient(
     patient_id: int,
@@ -98,15 +111,20 @@ def delete_patient(
     current_user: model.User = Depends(get_current_user),
 ):
     patient = (
-        db.query(model.Patient).filter(model.Patient.id == patient_id).first()
+        db.query(model.Patient)
+        .filter(
+            model.Patient.id == patient_id,
+            model.Patient.is_deleted.is_(False),
+        )
+        .first()
     )
     if not patient:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Patient not found"
         )
 
-    db.delete(patient)
+    patient.is_deleted = True
     db.commit()
     return {
-        "message": f"Patient with ID {patient_id} has been deleted successfully"
+        "message": f"Patient with ID {patient_id} has been soft-deleted successfully"
     }

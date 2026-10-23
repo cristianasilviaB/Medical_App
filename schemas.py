@@ -51,5 +51,6 @@ class PatientCreate(PatientBase):
 
 class PatientResponse(PatientBase):
     id: int
+    is_deleted: bool
 
     model_config = ConfigDict(from_attributes=True)
