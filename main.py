@@ -3,7 +3,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 import model
 from database import engine
-from router import auth, doctors, patients, services
+from router import auth, doctors, patients, services, appointments
 
 
 #SQLite tables
@@ -17,6 +17,7 @@ app.include_router(auth.router)
 app.include_router(doctors.router)
 app.include_router(patients.router)
 app.include_router(services.router)
+app.include_router(appointments.router)
 
 @app.get("/", response_class=HTMLResponse)
 def read_root(request: Request):

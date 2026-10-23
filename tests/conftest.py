@@ -7,13 +7,13 @@ from database import Base, get_db
 import model
 from main import app
 
-# Bază de date SQLite temporară în memorie (partajată între conexiuni)
+## Test Configuration
 SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
 
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL,
     connect_args={"check_same_thread": False},
-    poolclass=StaticPool,  # <--- Această linie păstrează baza de date activă în memorie
+    poolclass=StaticPool, 
 )
 TestingSessionLocal = sessionmaker(
     autocommit=False, autoflush=False, bind=engine
