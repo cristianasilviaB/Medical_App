@@ -20,6 +20,14 @@ class AppointmentRepository:
             .first()
         )
 
+    def get_by_doctor_id(self, doctor_id: int) -> List[model.Appointment]:
+        # Fetch all appointments for a specific doctor
+        return (
+            self.db.query(model.Appointment)
+            .filter(model.Appointment.doctor_id == doctor_id)
+            .all()
+        )
+
     def create(self, appointment: schemas.AppointmentCreate) -> model.Appointment:
         # Create and persist a new appointment record
         db_appointment = model.Appointment(**appointment.model_dump())

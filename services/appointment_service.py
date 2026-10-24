@@ -1,3 +1,4 @@
+from datetime import timedelta
 from typing import List
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
@@ -52,6 +53,32 @@ class AppointmentService:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Medical service not found",
             )
+
+        # Calculate requested start and end time window
+        requested_start = appointment_schema.appointment_date.replace(tzinfo=None)
+        requested_end = requested_start + timedelta(minutes=service.duration_minutes)
+
+        # Retrieve existing appointments for the requested doctor
+        existing_appointments = self.appointment_repo.get_by_doctor_id(appointment_schema.doctor_id)
+
+        # Check for time overlap
+        for existing in existing_appointments:
+            if existing.status == "cancelled":
+                continue
+
+            existing_service = self.service_repo.get_by_id(existing.service_id)
+            if not existing_service:
+                continue
+
+            existing_start = existing.appointment_date.replace(tzinfo=None)
+            existing_end = existing_start + timedelta(minutes=existing_service.duration_minutes)
+
+            # Overlap condition: requested_start < existing_end AND requested_end > existing_start
+            if requested_start < existing_end and requested_end > existing_start:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Doctor is not available at the requested time slot due to an overlapping appointment",
+                )
 
         return self.appointment_repo.create(appointment_schema)
 

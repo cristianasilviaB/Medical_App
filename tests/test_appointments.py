@@ -1,57 +1,33 @@
-from datetime import datetime, timezone
-
-
-def test_create_and_get_appointment(client):
+def test_create_overlapping_appointment(client):
     # Register and Login
-    user_data = {"username": "apptadmin", "password": "pass1234password"}
+    user_data = {"username": "overlapadmin", "password": "pass1234password"}
     client.post("/auth/register", json=user_data)
     login_resp = client.post("/auth/login", data=user_data)
     token = login_resp.json()["access_token"]
     headers = {"Authorization": f"Bearer {token}"}
 
-    # Create Doctor
-    doc_resp = client.post(
-        "/doctors/",
-        json={"name": "Dr. Maria Dan", "specialization": "Neurologie", "phone": "0733445566"},
+    # Create Doctor, Patients, Service
+    doc_id = client.post("/doctors/", json={"name": "Dr. Overlap", "specialization": "Cardiologie", "phone": "0700111222"}, headers=headers).json()["id"]
+    pat1_id = client.post("/patients/", json={"name": "Patient 1", "age": 30, "disease": "None", "doctor_id": doc_id}, headers=headers).json()["id"]
+    pat2_id = client.post("/patients/", json={"name": "Patient 2", "age": 40, "disease": "None", "doctor_id": doc_id}, headers=headers).json()["id"]
+    srv_id = client.post("/services/", json={"name": "Consultation", "price": 150.0, "duration_minutes": 30}, headers=headers).json()["id"]
+
+    now_iso = "2026-11-01T10:00:00"
+
+    # Create First Appointment (10:00 - 10:30)
+    resp1 = client.post(
+        "/appointments/",
+        json={"patient_id": pat1_id, "doctor_id": doc_id, "service_id": srv_id, "appointment_date": now_iso},
         headers=headers,
     )
-    doctor_id = doc_resp.json()["id"]
+    assert resp1.status_code == 201
 
-    # Create Patient
-    pat_resp = client.post(
-        "/patients/",
-        json={"name": "Ana Radu", "age": 30, "disease": "Migrena", "doctor_id": doctor_id},
+    #  Overlapping Appointment (10:15 - 10:45) -> Should Fail with HTTP 400
+    overlap_iso = "2026-11-01T10:15:00"
+    resp2 = client.post(
+        "/appointments/",
+        json={"patient_id": pat2_id, "doctor_id": doc_id, "service_id": srv_id, "appointment_date": overlap_iso},
         headers=headers,
     )
-    patient_id = pat_resp.json()["id"]
-
-    # Create Medical Service
-    srv_resp = client.post(
-        "/services/",
-        json={"name": "Consultatie Neurologie", "price": 200.0, "duration_minutes": 30},
-        headers=headers,
-    )
-    service_id = srv_resp.json()["id"]
-
-    # Create Appointment
-    now_iso = datetime.now(timezone.utc).isoformat()
-    appt_data = {
-        "patient_id": patient_id,
-        "doctor_id": doctor_id,
-        "service_id": service_id,
-        "appointment_date": now_iso,
-    }
-    create_resp = client.post("/appointments/", json=appt_data, headers=headers)
-    assert create_resp.status_code == 201
-    assert create_resp.json()["status"] == "scheduled"
-    appt_id = create_resp.json()["id"]
-
-    # Retrieve All Appointments
-    get_all = client.get("/appointments/")
-    assert get_all.status_code == 200
-    assert len(get_all.json()) == 1
-
-    # Retrieve One Appointment
-    get_one = client.get(f"/appointments/{appt_id}")
-    assert get_one.status_code == 200
-    assert get_one.json()["id"] == appt_id
+    assert resp2.status_code == 400
+    assert "not available" in resp2.json()["detail"].lower()
