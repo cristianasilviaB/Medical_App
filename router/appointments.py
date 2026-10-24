@@ -1,10 +1,11 @@
 from typing import List
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 from database import get_db
 import model
 import schemas
 from router.auth import get_current_user
+from services.appointment_service import AppointmentService
 
 router = APIRouter(prefix="/appointments", tags=["Appointments"])
 
@@ -20,68 +21,22 @@ def create_appointment(
     db: Session = Depends(get_db),
     current_user: model.User = Depends(get_current_user),
 ):
-    # Verify if patient exists and is active (not soft-deleted)
-    patient = (
-        db.query(model.Patient)
-        .filter(
-            model.Patient.id == appointment.patient_id,
-            model.Patient.is_deleted.is_(False),
-        )
-        .first()
-    )
-    if not patient:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Patient not found"
-        )
-
-    # Verify if doctor exists
-    doctor = (
-        db.query(model.Doctor)
-        .filter(model.Doctor.id == appointment.doctor_id)
-        .first()
-    )
-    if not doctor:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Doctor not found"
-        )
-
-    # Verify if medical service exists
-    service = (
-        db.query(model.MedicalService)
-        .filter(model.MedicalService.id == appointment.service_id)
-        .first()
-    )
-    if not service:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Medical service not found"
-        )
-
-    db_appointment = model.Appointment(**appointment.model_dump())
-    db.add(db_appointment)
-    db.commit()
-    db.refresh(db_appointment)
-    return db_appointment
+    appointment_service = AppointmentService(db)
+    return appointment_service.create_appointment(appointment)
 
 
 # READ ALL - Public route
 @router.get("/", response_model=List[schemas.AppointmentResponse])
 def get_appointments(db: Session = Depends(get_db)):
-    return db.query(model.Appointment).all()
+    appointment_service = AppointmentService(db)
+    return appointment_service.get_all_appointments()
 
 
 # READ ONE - Public route
 @router.get("/{appointment_id}", response_model=schemas.AppointmentResponse)
 def get_appointment(appointment_id: int, db: Session = Depends(get_db)):
-    appointment = (
-        db.query(model.Appointment)
-        .filter(model.Appointment.id == appointment_id)
-        .first()
-    )
-    if not appointment:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Appointment not found"
-        )
-    return appointment
+    appointment_service = AppointmentService(db)
+    return appointment_service.get_appointment_by_id(appointment_id)
 
 
 # DELETE - Protected route
@@ -91,18 +46,8 @@ def delete_appointment(
     db: Session = Depends(get_db),
     current_user: model.User = Depends(get_current_user),
 ):
-    appointment = (
-        db.query(model.Appointment)
-        .filter(model.Appointment.id == appointment_id)
-        .first()
-    )
-    if not appointment:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Appointment not found"
-        )
-
-    db.delete(appointment)
-    db.commit()
+    appointment_service = AppointmentService(db)
+    appointment_service.delete_appointment(appointment_id)
     return {
         "message": f"Appointment with ID {appointment_id} has been deleted successfully"
     }

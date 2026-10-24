@@ -1,10 +1,11 @@
 from typing import List
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 from database import get_db
 import model
 import schemas
 from router.auth import get_current_user
+from services.medical_service_service import MedicalServiceService
 
 router = APIRouter(prefix="/services", tags=["Medical Services"])
 
@@ -20,29 +21,19 @@ def create_service(
     db: Session = Depends(get_db),
     current_user: model.User = Depends(get_current_user),
 ):
-    db_service = model.MedicalService(**service.model_dump())
-    db.add(db_service)
-    db.commit()
-    db.refresh(db_service)
-    return db_service
+    medical_service_service = MedicalServiceService(db)
+    return medical_service_service.create_service(service)
 
 
 # READ ALL - Public route
 @router.get("/", response_model=List[schemas.MedicalServiceResponse])
 def get_services(db: Session = Depends(get_db)):
-    return db.query(model.MedicalService).all()
+    medical_service_service = MedicalServiceService(db)
+    return medical_service_service.get_all_services()
 
 
 # READ ONE - Public route
 @router.get("/{service_id}", response_model=schemas.MedicalServiceResponse)
 def get_service(service_id: int, db: Session = Depends(get_db)):
-    service = (
-        db.query(model.MedicalService)
-        .filter(model.MedicalService.id == service_id)
-        .first()
-    )
-    if not service:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Medical service not found"
-        )
-    return service
+    medical_service_service = MedicalServiceService(db)
+    return medical_service_service.get_service_by_id(service_id)
