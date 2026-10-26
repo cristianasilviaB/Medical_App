@@ -86,3 +86,22 @@ class AppointmentService:
         # Delete appointment by ID
         appointment = self.get_appointment_by_id(appointment_id)
         self.appointment_repo.delete(appointment)
+
+    def update_appointment_status(
+        self, appointment_id: int, status_update: schemas.AppointmentStatusUpdate
+    ) -> model.Appointment:
+        # Validate status value
+        allowed_statuses = ["scheduled", "completed", "cancelled"]
+        if status_update.status not in allowed_statuses:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid status. Allowed values are: {', '.join(allowed_statuses)}",
+            )
+
+        appointment = self.get_appointment_by_id(appointment_id)
+        return self.appointment_repo.update_status(appointment, status_update.status)
+
+    def delete_appointment(self, appointment_id: int) -> None:
+        # Delete appointment by ID
+        appointment = self.get_appointment_by_id(appointment_id)
+        self.appointment_repo.delete(appointment)

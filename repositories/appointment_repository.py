@@ -35,8 +35,15 @@ class AppointmentRepository:
         self.db.commit()
         self.db.refresh(db_appointment)
         return db_appointment
+  
+    def update_status(self, appointment: model.Appointment, status: str) -> model.Appointment:
+        # Update and persist appointment status
+        appointment.status = status
+        self.db.commit()
+        self.db.refresh(appointment)
+        return appointment
 
     def delete(self, appointment: model.Appointment) -> None:
         # Permanently delete an appointment record
         self.db.delete(appointment)
-        self.db.commit()
+        self.db.commit()     

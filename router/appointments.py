@@ -39,6 +39,18 @@ def get_appointment(appointment_id: int, db: Session = Depends(get_db)):
     return appointment_service.get_appointment_by_id(appointment_id)
 
 
+# 4. UPDATE STATUS - Protected route
+@router.patch("/{appointment_id}/status", response_model=schemas.AppointmentResponse)
+def update_appointment_status(
+    appointment_id: int,
+    status_update: schemas.AppointmentStatusUpdate,
+    db: Session = Depends(get_db),
+    current_user: model.User = Depends(get_current_user),
+):
+    appointment_service = AppointmentService(db)
+    return appointment_service.update_appointment_status(appointment_id, status_update)
+
+
 # DELETE - Protected route
 @router.delete("/{appointment_id}")
 def delete_appointment(

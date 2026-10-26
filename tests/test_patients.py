@@ -1,5 +1,5 @@
 def test_soft_delete_patient(client):
-    # 1. Inregistrare si Login
+    # Register and Login
     user_data = {"username": "patientadmin", "password": "pass1234password"}
     client.post("/auth/register", json=user_data)
     login_resp = client.post("/auth/login", data=user_data)

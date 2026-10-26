@@ -89,3 +89,7 @@ class AppointmentResponse(AppointmentBase):
     status: str
 
     model_config = ConfigDict(from_attributes=True)
+
+ # --- APPOINTMENT STATUS SCHEMA ---
+class AppointmentStatusUpdate(BaseModel):
+    status: str   

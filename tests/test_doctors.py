@@ -5,7 +5,7 @@ def test_get_doctors_empty(client):
 
 
 def test_create_doctor_unauthorized(client):
-    # Verificăm că încercarea de creare fără token JWT returnează 401 Unauthorized
+    # Attempt to create a doctor without authentication
     doctor_data = {
         "name": "Dr. Andrei Popescu",
         "specialization": "Cardiologie",
@@ -16,12 +16,12 @@ def test_create_doctor_unauthorized(client):
 
 
 def test_register_login_and_create_doctor(client):
-    # 1. Înregistrare utilizator
+    # Register a new user
     user_data = {"username": "testuser", "password": "testpassword123"}
     reg_resp = client.post("/auth/register", json=user_data)
     assert reg_resp.status_code == 201
 
-    # 2. Autentificare pentru obținere token JWT
+    # Login with the registered user to get a token
     login_resp = client.post(
         "/auth/login",
         data={"username": "testuser", "password": "testpassword123"},
@@ -29,7 +29,7 @@ def test_register_login_and_create_doctor(client):
     assert login_resp.status_code == 200
     token = login_resp.json()["access_token"]
 
-    # 3. Creare doctor cu Header-ul Authorization Bearer
+    # Use the token to create a doctor
     headers = {"Authorization": f"Bearer {token}"}
     doctor_data = {
         "name": "Dr. Elena Ionescu",
