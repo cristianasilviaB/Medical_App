@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 from database import get_db
@@ -25,12 +25,20 @@ def create_appointment(
     return appointment_service.create_appointment(appointment)
 
 
-# READ ALL - Public route
+# READ ALL - Public route with filtering and pagination
 @router.get("/", response_model=List[schemas.AppointmentResponse])
-def get_appointments(db: Session = Depends(get_db)):
+def get_appointments(
+    skip: int = 0,
+    limit: int = 100,
+    doctor_id: Optional[int] = None,
+    patient_id: Optional[int] = None,
+    status: Optional[str] = None,
+    db: Session = Depends(get_db),
+):
     appointment_service = AppointmentService(db)
-    return appointment_service.get_all_appointments()
-
+    return appointment_service.get_all_appointments(
+        skip=skip, limit=limit, doctor_id=doctor_id, patient_id=patient_id, status=status
+    )
 
 # READ ONE - Public route
 @router.get("/{appointment_id}", response_model=schemas.AppointmentResponse)

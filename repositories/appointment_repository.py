@@ -12,6 +12,26 @@ class AppointmentRepository:
         # Fetch all appointments from the database
         return self.db.query(model.Appointment).all()
 
+    def get_filtered(
+        self,
+        skip: int = 0,
+        limit: int = 100,
+        doctor_id: Optional[int] = None,
+        patient_id: Optional[int] = None,
+        status: Optional[str] = None,
+    ) -> List[model.Appointment]:
+        # Fetch appointments applying optional filters and pagination
+        query = self.db.query(model.Appointment)
+
+        if doctor_id:
+            query = query.filter(model.Appointment.doctor_id == doctor_id)
+        if patient_id:
+            query = query.filter(model.Appointment.patient_id == patient_id)
+        if status:
+            query = query.filter(model.Appointment.status == status)
+
+        return query.offset(skip).limit(limit).all()
+
     def get_by_id(self, appointment_id: int) -> Optional[model.Appointment]:
         # Fetch a single appointment by ID
         return (
@@ -35,7 +55,7 @@ class AppointmentRepository:
         self.db.commit()
         self.db.refresh(db_appointment)
         return db_appointment
-  
+
     def update_status(self, appointment: model.Appointment, status: str) -> model.Appointment:
         # Update and persist appointment status
         appointment.status = status
@@ -46,4 +66,4 @@ class AppointmentRepository:
     def delete(self, appointment: model.Appointment) -> None:
         # Permanently delete an appointment record
         self.db.delete(appointment)
-        self.db.commit()     
+        self.db.commit()

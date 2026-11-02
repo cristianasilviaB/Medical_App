@@ -1,5 +1,6 @@
 from pydantic import BaseModel, ConfigDict
 from datetime import datetime
+from typing import List
 
 #  USER SCHEMAS 
 class UserCreate(BaseModel):
@@ -93,3 +94,9 @@ class AppointmentResponse(AppointmentBase):
  # --- APPOINTMENT STATUS SCHEMA ---
 class AppointmentStatusUpdate(BaseModel):
     status: str   
+
+# --- PATIENT HISTORY SCHEMA ---
+class PatientHistoryResponse(PatientResponse):
+    appointments: List[AppointmentResponse] = []
+
+    model_config = ConfigDict(from_attributes=True)

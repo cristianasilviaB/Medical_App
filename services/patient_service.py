@@ -12,9 +12,9 @@ class PatientService:
         self.patient_repo = PatientRepository(db)
         self.doctor_repo = DoctorRepository(db)
 
-    def get_all_patients(self) -> List[model.Patient]:
-        # Retrieve active patients via repository
-        return self.patient_repo.get_all_active()
+    def get_all_patients(self, skip: int = 0, limit: int = 100) -> List[model.Patient]:
+        # Retrieve active patients with pagination
+        return self.patient_repo.get_all_active(skip=skip, limit=limit)
 
     def get_patient_by_id(self, patient_id: int) -> model.Patient:
         # Retrieve active patient by ID or raise HTTP 404
@@ -25,6 +25,10 @@ class PatientService:
                 detail="Patient not found",
             )
         return patient
+
+    def get_patient_history(self, patient_id: int) -> model.Patient:
+        # Retrieve full patient history including related appointments
+        return self.get_patient_by_id(patient_id)
 
     def create_patient(self, patient_schema: schemas.PatientCreate) -> model.Patient:
         # Validate doctor existence before creating patient

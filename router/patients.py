@@ -24,11 +24,21 @@ def create_patient(
     patient_service = PatientService(db)
     return patient_service.create_patient(patient)
 
-#  READ ALL - Public route
+# READ ALL - Public route with pagination
 @router.get("/", response_model=List[schemas.PatientResponse])
-def get_patients(db: Session = Depends(get_db)):
+def get_patients(
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db),
+):
     patient_service = PatientService(db)
-    return patient_service.get_all_patients()
+    return patient_service.get_all_patients(skip=skip, limit=limit)
+
+# READ PATIENT HISTORY - Public route
+@router.get("/{patient_id}/history", response_model=schemas.PatientHistoryResponse)
+def get_patient_history(patient_id: int, db: Session = Depends(get_db)):
+    patient_service = PatientService(db)
+    return patient_service.get_patient_history(patient_id)
 
 #  READ ONE - Public route
 @router.get("/{patient_id}", response_model=schemas.PatientResponse)

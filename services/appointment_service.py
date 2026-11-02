@@ -1,5 +1,5 @@
 from datetime import timedelta
-from typing import List
+from typing import List, Optional
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 from repositories.appointment_repository import AppointmentRepository
@@ -17,9 +17,18 @@ class AppointmentService:
         self.doctor_repo = DoctorRepository(db)
         self.service_repo = ServiceRepository(db)
 
-    def get_all_appointments(self) -> List[model.Appointment]:
-        # Retrieve all appointments via repository
-        return self.appointment_repo.get_all()
+    def get_all_appointments(
+        self,
+        skip: int = 0,
+        limit: int = 100,
+        doctor_id: Optional[int] = None,
+        patient_id: Optional[int] = None,
+        status: Optional[str] = None,
+    ) -> List[model.Appointment]:
+        # Retrieve filtered appointments via repository
+        return self.appointment_repo.get_filtered(
+            skip=skip, limit=limit, doctor_id=doctor_id, patient_id=patient_id, status=status
+        )
 
     def get_appointment_by_id(self, appointment_id: int) -> model.Appointment:
         # Retrieve appointment by ID or raise HTTP 404

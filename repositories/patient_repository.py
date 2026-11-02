@@ -8,11 +8,13 @@ class PatientRepository:
     def __init__(self, db: Session):
         self.db = db
 
-    def get_all_active(self) -> List[model.Patient]:
-        # Fetch all active (not soft-deleted) patients
+    def get_all_active(self, skip: int = 0, limit: int = 100) -> List[model.Patient]:
+        # Fetch active patients with pagination support
         return (
             self.db.query(model.Patient)
             .filter(model.Patient.is_deleted.is_(False))
+            .offset(skip)
+            .limit(limit)
             .all()
         )
 
