@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
+from middleware import LoggingMiddleware
 import model
 from database import engine
 from router import auth, doctors, patients, services, appointments
@@ -11,7 +11,8 @@ model.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Hospital Management API")
 
-templates = Jinja2Templates(directory="templates")
+# Add custom logging middleware
+app.add_middleware(LoggingMiddleware)
 
 app.include_router(auth.router)
 app.include_router(doctors.router)
