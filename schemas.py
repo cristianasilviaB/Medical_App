@@ -100,3 +100,29 @@ class PatientHistoryResponse(PatientResponse):
     appointments: List[AppointmentResponse] = []
 
     model_config = ConfigDict(from_attributes=True)
+
+# --- ANALYTICS SCHEMAS ---
+class AnalyticsSummaryResponse(BaseModel):
+    total_active_patients: int
+    total_doctors: int
+    total_appointments: int
+    scheduled_appointments: int
+    completed_appointments: int
+    cancelled_appointments: int
+    total_revenue: float
+
+
+class DoctorAnalyticsResponse(BaseModel):
+    doctor_id: int
+    doctor_name: str
+    specialization: str
+    total_appointments: int
+    completed_appointments: int
+    total_revenue: float
+
+
+class ServiceAnalyticsResponse(BaseModel):
+    service_id: int
+    service_name: str
+    total_appointments: int
+    total_revenue: float
