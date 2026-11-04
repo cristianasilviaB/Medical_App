@@ -21,7 +21,7 @@ An enterprise-grade Python Backend API built with **FastAPI** and **SQLAlchemy**
 The application enforces a strict separation of concerns to maximize maintainability, testability, and enterprise scalability:
 
 
-![Architecture](images\architecture.png)
+![Architecture](images/architecture.png)
 
 
 ### Layer Responsibilities
@@ -36,13 +36,13 @@ The application enforces a strict separation of concerns to maximize maintainabi
 
 The database schema manages relationship integrity across core healthcare entities:
 
-![Relational Schema](images\relational_Schema.png)
+![Relational Schema](images/relational_Schema.png)
 
 ## Request Lifecycle & Validation Flow
 
 When booking an appointment, request data flows through multi-stage validation checks before persistence:
 
-![Request Lifecycle](images\request_lifecycle.png)
+![Request Lifecycle](images/request_lifecycle.png)
 
 ##  Core Modules & Business Features
 
@@ -58,10 +58,7 @@ When booking an appointment, request data flows through multi-stage validation c
 
   * Automated overlap conflict prevention per doctor based on procedure duration:
     
-
-    $$
-    \text{requested\_start} < \text{existing\_end} \quad \text{and} \quad \text{requested\_end} > \text{existing\_start}
-    $$
+`requested_start < existing_end` **and** `requested_end > existing_start`
 
   * Status lifecycle management (`scheduled`, `completed`, `cancelled`).
 
