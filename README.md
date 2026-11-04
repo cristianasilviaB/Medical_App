@@ -1,128 +1,152 @@
-# Hospital Management System API
+# Medical Hospital Management System API
 
-A secure, modular, and production-ready RESTful API built with FastAPI, SQLAlchemy, Pydantic, and SQLite. Designed following clean code principles, the system manages hospital workflows including user authentication with JWT, doctor profiles, patient records, and an automated testing suite.
+An enterprise-grade Python Backend API built with **FastAPI** and **SQLAlchemy**, designed following a strict **3-Layer Architecture** (Routers, Services, Repositories) for scalable hospital administration, patient record management, and clinical analytics.
 
----
+## Key Technologies
 
-## Key Features
+* **Framework:** FastAPI (Python 3.10+)
 
-- **User Authentication & Authorization:**
-  - Secure user registration and login endpoints (`/auth/register`, `/auth/login`, `/auth/me`).
-  - Password hashing using `passlib` and `bcrypt`.
-  - Token-based route protection for state-changing operations (`POST`, `PUT`, `DELETE`).
-  - Full compatibility with Swagger UI's Authorize button (`OAuth2PasswordBearer`).
+* **ORM & Database:** SQLAlchemy (SQLite)
 
-- **Doctor Management:**
-  - Full CRUD operations (`/doctors`).
-  - Public read endpoints and JWT-protected create, update, and delete endpoints.
+* **Data Validation & DTOs:** Pydantic v2
 
-- **Patient Records:**
-  - Full CRUD operations (`/patients`).
-  - Automatic validation of doctor existence (`doctor_id`) upon patient creation and update.
-  - Public read endpoints and JWT-protected modification endpoints.
+* **Security & Authentication:** OAuth2 with JWT (`PyJWT`, `Passlib` with `Bcrypt`)
 
-- **Data Validation & Response Schemas:**
-  - Powered by Pydantic v2 (`schemas.py`) for request body validation and response serialization (`response_model`).
-  - Prevents mass-assignment vulnerabilities and ensures clean API contracts.
+* **Testing & Quality Assurance:** Pytest, Pytest-Cov
 
-- **Automated Testing Suite:**
-  - Comprehensive unit and integration tests using Pytest and HTTPX.
-  - Isolated test execution with an in-memory SQLite database (`sqlite:///:memory:` with `StaticPool`).
+* **Logging & Audit:** Custom FastAPI Middleware (`LoggingMiddleware`)
 
-- **Web Interface:**
-  - Jinja2 template integration rendering a clean home page at `/`.
+## System Architecture & Layering
 
----
+The application enforces a strict separation of concerns to maximize maintainability, testability, and enterprise scalability:
 
-## Tech Stack
 
-- **Language:** Python 3.12
-- **Framework:** FastAPI
-- **Database & ORM:** SQLite, SQLAlchemy 2.0
-- **Validation:** Pydantic v2
-- **Authentication:** Passlib (bcrypt), Python-JOSE (JWT)
-- **Testing:** Pytest, HTTPX, SQLAlchemy StaticPool
-- **ASGI Server:** Uvicorn
-- **Templating:** Jinja2
-- **Version Control:** Git & GitHub
+![Architecture](images\architecture.png)
 
----
 
-## Project Structure
+### Layer Responsibilities
 
-```text
+1. **Router Layer (`router/`)**: Handles HTTP endpoint registration, query/path parameters, JWT token extraction, and response serialisation.
+
+2. **Service Layer (`services/`)**: Encapsulates core business rules (preventing doctor schedule conflicts, soft-deletion handling, medical status workflows, and revenue calculations).
+
+3. **Repository Layer (`repositories/`)**: Manages raw database interactions via SQLAlchemy (CRUD operations, filtering, pagination, and SQL aggregations).
+
+## Relational Schema (ERD)
+
+The database schema manages relationship integrity across core healthcare entities:
+
+![Relational Schema](images\relational_Schema.png)
+
+## Request Lifecycle & Validation Flow
+
+When booking an appointment, request data flows through multi-stage validation checks before persistence:
+
+![Request Lifecycle](images\request_lifecycle.png)
+
+##  Core Modules & Business Features
+
+* **Authentication & Authorization:** User registration, password hashing (`bcrypt`), and JWT Bearer Token validation.
+
+* **Doctor Management:** Full CRUD operations for clinical staff and specializations.
+
+* **Patient Management:** Full CRUD with **Soft Delete** support (`is_deleted=True`) to preserve clinical history, plus a dedicated history retrieval endpoint (`GET /patients/{id}/history`).
+
+* **Medical Services Catalog:** Configurable procedures with pricing and duration (in minutes).
+
+* **Appointment Management:**
+
+  * Automated overlap conflict prevention per doctor based on procedure duration:
+    
+
+    $$
+    \text{requested\_start} < \text{existing\_end} \quad \text{and} \quad \text{requested\_end} > \text{existing\_start}
+    $$
+
+  * Status lifecycle management (`scheduled`, `completed`, `cancelled`).
+
+  * Automatic time slot release upon appointment cancellation.
+
+  * Search filtering (by doctor, patient, status) and pagination support (`skip`, `limit`).
+
+* **Analytics & Reporting Module:** Aggregate stats for hospital metrics, completed vs. cancelled bookings, revenue by doctor, and revenue by medical service.
+
+* **Audit & Middleware:** Custom HTTP request logging and performance duration header (`X-Process-Time`).
+
+## Project Directory Structure
+
+```
 Medical_app/
-│
-├── router/             # Modular API route handlers
-│   ├── auth.py         # Authentication & JWT endpoints
-│   ├── doctors.py      # Doctor CRUD endpoints (protected)
-│   └── patients.py     # Patient CRUD endpoints (protected)
-│
-├── templates/          # HTML templates for web UI
-│   └── index.html      # Landing page
-│
-├── tests/              # Automated testing suite
-│   ├── conftest.py     # Test fixtures & in-memory DB setup (StaticPool)
-│   └── test_doctors.py # Router & Auth integration tests
-│
-├── database.py         # SQLAlchemy engine & session setup
-├── main.py             # Application entrypoint & router initialization
-├── model.py            # SQLAlchemy ORM models (User, Doctor, Patient)
-├── schemas.py          # Pydantic schemas (Request & Response models)
-├── pytest.ini          # Pytest configuration file
-├── req.txt             # Project dependencies
-├── .gitignore          # Excluded files (DB, __pycache__, venv)
-└── README.md           # Project documentation
+├── repositories/           # Data Access Layer (SQLAlchemy ORM Queries)
+│   ├── analytics_repository.py
+│   ├── appointment_repository.py
+│   ├── doctor_repository.py
+│   ├── patient_repository.py
+│   └── service_repository.py
+├── services/               # Business Logic Layer (Domain Validations)
+│   ├── analytics_service.py
+│   ├── appointment_service.py
+│   ├── doctor_service.py
+│   ├── medical_service_service.py
+│   └── patient_service.py
+├── router/                 # API Controllers Layer (FastAPI Endpoints)
+│   ├── analytics.py
+│   ├── appointments.py
+│   ├── auth.py
+│   ├── doctors.py
+│   ├── patients.py
+│   └── services.py
+├── tests/                  # Automated Test Suite (Pytest)
+│   ├── test_analytics.py
+│   ├── test_appointments.py
+│   ├── test_doctors.py
+│   ├── test_patients.py
+│   └── test_services.py
+├── database.py             # Database Engine & Session Local Setup
+├── main.py                 # FastAPI Application Gateway & Router Registration
+├── middleware.py           # Logging & Performance Middleware
+├── model.py                # Database Relational Entities (SQLAlchemy Models)
+├── schemas.py              # Data Transfer Objects (Pydantic Schemas)
+└── requirements.txt        # Project Dependencies
+
 ```
 
----
+## Installation & Local Setup
 
-## Getting Started
+### 1. Clone Repository & Setup Virtual Environment
 
-### Prerequisites
-- Python 3.11 or Python 3.12
-- Git installed
+```
+git clone <REPOSITORY_URL>
+cd Medical_app
+python -m venv venv
+.\venv\Scripts\Activate.ps1
 
-### Installation & Local Setup
+```
 
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/cristianasilviaB/Medical_App.git
-   cd Medical_App
-   ```
+### 2. Install Dependencies
 
-2. **Create and activate a virtual environment:**
-   ```powershell
-   python -m venv venv
-   # On Windows (PowerShell):
-   .\venv\Scripts\activate
-   # On macOS/Linux:
-   source venv/bin/activate
-   ```
+```
+pip install -r requirements.txt
 
-3. **Install dependencies:**
-   ```bash
-   pip install -r req.txt
-   ```
+```
 
-4. **Run the application:**
-   ```bash
-   uvicorn main:app --reload
-   ```
+### 3. Run Development Server
 
-5. **Access the Web Dashboard & API Docs:**
-   - Web App: http://127.0.0.1:8000
-   - Interactive API Documentation (Swagger UI): http://127.0.0.1:8000/docs
-   - Alternative API Documentation (ReDoc): http://127.0.0.1:8000/redoc
+```
+uvicorn main:app --reload
 
----
+```
 
-## Running Automated Tests
+The API server will run at `http://127.0.0.1:8000`.
 
-Run the test suite using `pytest`:
+Interactive Swagger documentation is available at `http://127.0.0.1:8000/docs`.
 
-```powershell
+## Testing & Code Coverage
+
+Run the automated test suite with Pytest:
+
+```
 python -m pytest
+
 ```
 
-The tests execute against a temporary in-memory database (`sqlite:///:memory:`) using `StaticPool` to ensure isolated, fast, and repeatable runs without affecting the local `hospital.db` file.
