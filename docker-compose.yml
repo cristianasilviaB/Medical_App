@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    container_name: medical_api
+    ports:
+      - "8000:8000"
+    volumes:
+      # Keep the database file persistent by mapping it to a volume
+      - sqlite_data:/app/data
+    environment:
+      # Set the database URL to use the SQLite database file in the volume
+      - SQLALCHEMY_DATABASE_URL=sqlite:////app/data/hospital.db
+
+volumes:
+  sqlite_data:

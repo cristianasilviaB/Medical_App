@@ -1,3 +1,4 @@
+from fastapi.templating import Jinja2Templates
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from middleware import LoggingMiddleware
@@ -5,7 +6,7 @@ import model
 from database import engine
 from router import auth, doctors, patients, services, appointments, analytics
 
-
+templates = Jinja2Templates(directory="templates")
 #SQLite tables
 model.Base.metadata.create_all(bind=engine)
 
@@ -23,4 +24,7 @@ app.include_router(analytics.router)
 
 @app.get("/", response_class=HTMLResponse)
 def read_root(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse(
+        request=request, 
+        name="index.html", 
+        context={"request": request})
