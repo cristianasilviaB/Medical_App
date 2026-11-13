@@ -1,17 +1,34 @@
-version: '3.8'
-
 services:
+  db:
+    image: postgres:16-alpine
+    container_name: medical_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: medical_user
+      POSTGRES_PASSWORD: medical_password
+      POSTGRES_DB: hospital_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U medical_user -d hospital_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   web:
     build: .
     container_name: medical_api
+    restart: unless-stopped
     ports:
       - "8000:8000"
-    volumes:
-      # Keep the database file persistent by mapping it to a volume
-      - sqlite_data:/app/data
     environment:
-      # Set the database URL to use the SQLite database file in the volume
-      - SQLALCHEMY_DATABASE_URL=sqlite:////app/data/hospital.db
+      - SQLALCHEMY_DATABASE_URL=postgresql://medical_user:medical_password@db:5432/hospital_db
+      - TEST_DATABASE_URL=postgresql://medical_user:medical_password@db:5432/hospital_test_db
+    depends_on:
+      db:
+        condition: service_healthy
 
 volumes:
-  sqlite_data:
+  postgres_data:

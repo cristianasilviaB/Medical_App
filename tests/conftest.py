@@ -1,23 +1,30 @@
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import StaticPool
 from database import Base, get_db
 import model
 from main import app
+import os
 
 ## Test Configuration
-SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
+TEST_DATABASE_URL = os.getenv(
+    "TEST_DATABASE_URL",
+    "postgresql://medical_user:medical_password@localhost:5432/hospital_test_db"
+)
 
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL,
-    connect_args={"check_same_thread": False},
-    poolclass=StaticPool, 
-)
-TestingSessionLocal = sessionmaker(
-    autocommit=False, autoflush=False, bind=engine
-)
+admin_url = TEST_DATABASE_URL.rsplit("/", 1)[0] + "/postgres"
+admin_engine = create_engine(admin_url, isolation_level="AUTOCOMMIT")
+with admin_engine.connect() as conn:
+    exists = conn.execute(
+        text("SELECT 1 FROM pg_database WHERE datname = 'hospital_test_db'")
+    ).scalar()
+    if not exists:
+        conn.execute(text("CREATE DATABASE hospital_test_db"))
+admin_engine.dispose()
+
+engine = create_engine(TEST_DATABASE_URL)
+TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
 @pytest.fixture(scope="function")
