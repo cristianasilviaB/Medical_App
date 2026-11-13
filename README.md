@@ -1,18 +1,20 @@
 # Medical Hospital Management System API
 
-An enterprise-grade Python Backend API built with **FastAPI** and **SQLAlchemy**, designed following a strict **3-Layer Architecture** (Routers, Services, Repositories) for scalable hospital administration, patient record management, and clinical analytics.
+An enterprise-grade Python Backend API built with **FastAPI**, **SQLAlchemy**, and **PostgreSQL**, designed following a strict **3-Layer Architecture** (Routers, Services, Repositories) and containerized with **Docker Compose** for scalable hospital administration, patient record management, and clinical analytics.
 
 ## Key Technologies
 
-* **Framework:** FastAPI (Python 3.10+)
+* **Framework:** FastAPI (Python 3.12)
 
-* **ORM & Database:** SQLAlchemy (SQLite)
+* **Database & ORM:** PostgreSQL 16 (Alpine), SQLAlchemy 2.0 (`psycopg2-binary` / `psycopg`)
+
+* **Containerization & Orchestration:** Docker, Docker Compose
 
 * **Data Validation & DTOs:** Pydantic v2
 
 * **Security & Authentication:** OAuth2 with JWT (`PyJWT`, `Passlib` with `Bcrypt`)
 
-* **Testing & Quality Assurance:** Pytest, Pytest-Cov
+* **Testing & Quality Assurance:** Pytest, Pytest-Cov (93% coverage on PostgreSQL)
 
 * **Logging & Audit:** Custom FastAPI Middleware (`LoggingMiddleware`)
 
@@ -20,17 +22,25 @@ An enterprise-grade Python Backend API built with **FastAPI** and **SQLAlchemy**
 
 The application enforces a strict separation of concerns to maximize maintainability, testability, and enterprise scalability:
 
-
 ![Architecture](images/architecture.png)
+
 
 
 ### Layer Responsibilities
 
 1. **Router Layer (`router/`)**: Handles HTTP endpoint registration, query/path parameters, JWT token extraction, and response serialisation.
 
-2. **Service Layer (`services/`)**: Encapsulates core business rules (preventing doctor schedule conflicts, soft-deletion handling, medical status workflows, and revenue calculations).
+2. **Service Layer (`services/`)**: Encapsulates core business rules (preventing doctor schedule conflicts, duplicate active patient checks, soft-deletion handling, medical status workflows, and revenue calculations).
 
 3. **Repository Layer (`repositories/`)**: Manages raw database interactions via SQLAlchemy (CRUD operations, filtering, pagination, and SQL aggregations).
+
+### Container Infrastructure (Docker Compose)
+
+The production stack runs as an isolated multi-container setup orchestrated via `docker-compose.yml`:
+
+* **`medical_db` (`postgres:16-alpine`):** Dedicated PostgreSQL database service backed by a persistent Docker volume (`postgres_data`) and automated health checks (`pg_isready`).
+
+* **`medical_api` (`web`):** FastAPI application container configured with `depends_on` (`condition: service_healthy`) and `restart: unless-stopped` policies so the API starts only after PostgreSQL is ready to accept connections.
 
 ## Relational Schema (ERD)
 
@@ -44,21 +54,20 @@ When booking an appointment, request data flows through multi-stage validation c
 
 ![Request Lifecycle](images/request_lifecycle.png)
 
-##  Core Modules & Business Features
+## Core Modules & Business Features
 
 * **Authentication & Authorization:** User registration, password hashing (`bcrypt`), and JWT Bearer Token validation.
 
 * **Doctor Management:** Full CRUD operations for clinical staff and specializations.
 
-* **Patient Management:** Full CRUD with **Soft Delete** support (`is_deleted=True`) to preserve clinical history, plus a dedicated history retrieval endpoint (`GET /patients/{id}/history`).
+* **Patient Management:** Full CRUD with duplicate active record prevention, **Soft Delete** support (`is_deleted=True`) to preserve clinical history, and a dedicated history retrieval endpoint (`GET /patients/{id}/history`).
 
 * **Medical Services Catalog:** Configurable procedures with pricing and duration (in minutes).
 
 * **Appointment Management:**
 
   * Automated overlap conflict prevention per doctor based on procedure duration:
-    
-`requested_start < existing_end` **and** `requested_end > existing_start`
+    `requested_start < existing_end` **and** `requested_end > existing_start`
 
   * Status lifecycle management (`scheduled`, `completed`, `cancelled`).
 
@@ -74,6 +83,7 @@ When booking an appointment, request data flows through multi-stage validation c
 
 ```
 Medical_app/
+├── images/                 # Architecture, ERD & Request Lifecycle diagrams
 ├── repositories/           # Data Access Layer (SQLAlchemy ORM Queries)
 │   ├── analytics_repository.py
 │   ├── appointment_repository.py
@@ -93,57 +103,86 @@ Medical_app/
 │   ├── doctors.py
 │   ├── patients.py
 │   └── services.py
-├── tests/                  # Automated Test Suite (Pytest)
+├── tests/                  # Automated Test Suite (Pytest on PostgreSQL)
+│   ├── conftest.py
 │   ├── test_analytics.py
 │   ├── test_appointments.py
 │   ├── test_doctors.py
 │   ├── test_patients.py
 │   └── test_services.py
+├── Dockerfile              # Multi-service API container definition
+├── docker-compose.yml      # Multi-container orchestration (FastAPI + PostgreSQL)
 ├── database.py             # Database Engine & Session Local Setup
 ├── main.py                 # FastAPI Application Gateway & Router Registration
 ├── middleware.py           # Logging & Performance Middleware
 ├── model.py                # Database Relational Entities (SQLAlchemy Models)
 ├── schemas.py              # Data Transfer Objects (Pydantic Schemas)
-└── requirements.txt        # Project Dependencies
+├── pytest.ini              # Pytest & Code Coverage configuration
+└── req.txt                 # Project Dependencies
 
 ```
 
-## Installation & Local Setup
+## Getting Started (Docker & PostgreSQL)
 
-### 1. Clone Repository & Setup Virtual Environment
+### Prerequisites
 
-```
-git clone <REPOSITORY_URL>
-cd Medical_app
-python -m venv venv
-.\venv\Scripts\Activate.ps1
+* **Docker Desktop** installed and running
 
-```
+* **Git** installed
 
-### 2. Install Dependencies
+### 1. Clone the Repository
 
 ```
-pip install -r requirements.txt
+git clone https://github.com/cristianasilviaB/Medical_App.git
+cd Medical_App
 
 ```
 
-### 3. Run Development Server
+### 2. Build and Start the Containers
+
+Start both the **PostgreSQL 16** database and the **FastAPI** backend in detached mode:
 
 ```
-uvicorn main:app --reload
+docker compose up -d --build
 
 ```
 
-The API server will run at `http://127.0.0.1:8000`.
+* The API server runs at `http://localhost:8000`.
 
-Interactive Swagger documentation is available at `http://127.0.0.1:8000/docs`.
+* Interactive Swagger UI documentation is available at `http://localhost:8000/docs`.
+
+* Alternative ReDoc documentation is available at `http://localhost:8000/redoc`.
+
+### 3. Useful Docker Management Commands
+
+* **Check running containers:**
+
+  ```
+  docker ps
+  
+  ```
+
+* **View live API logs:**
+
+  ```
+  docker compose logs -f web
+  
+  ```
+
+* **Stop containers (preserves PostgreSQL data in `postgres_data` volume):**
+
+  ```
+  docker compose down
+  
+  ```
 
 ## Testing & Code Coverage
 
-Run the automated test suite with Pytest:
+The automated test suite executes directly against an isolated PostgreSQL test database (`hospital_test_db`) inside the container environment without affecting production records.
+
+Run all tests with coverage report:
 
 ```
-python -m pytest
+docker compose exec web python -m pytest
 
 ```
-
