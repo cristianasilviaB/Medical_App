@@ -28,3 +28,7 @@ def read_root(request: Request):
         request=request, 
         name="index.html", 
         context={"request": request})
+
+@app.get("/health", status_code=200)
+def health_check():
+    return {"status": "healthy"}
