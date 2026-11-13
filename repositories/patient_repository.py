@@ -29,6 +29,18 @@ class PatientRepository:
             .first()
         )
 
+    def get_existing_patient(self, name: str, age: int) -> Optional[model.Patient]:
+        # Check if an active patient with the same name and age already exists
+        return (
+            self.db.query(model.Patient)
+            .filter(
+                model.Patient.name.ilike(name.strip()),
+                model.Patient.age == age,
+                model.Patient.is_deleted.is_(False),
+            )
+            .first()
+        )
+        
     def create(self, patient: schemas.PatientCreate) -> model.Patient:
         # Create a new patient record
         db_patient = model.Patient(**patient.model_dump())

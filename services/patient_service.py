@@ -31,6 +31,16 @@ class PatientService:
         return self.get_patient_by_id(patient_id)
 
     def create_patient(self, patient_schema: schemas.PatientCreate) -> model.Patient:
+        # Check for duplicate active patient
+        existing_patient = self.patient_repo.get_existing_patient(
+            name=patient_schema.name, age=patient_schema.age
+        )
+        if existing_patient:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Patient '{patient_schema.name}' (age {patient_schema.age}) already exists with ID {existing_patient.id}",
+            )
+
         # Validate doctor existence before creating patient
         doctor = self.doctor_repo.get_by_id(patient_schema.doctor_id)
         if not doctor:
