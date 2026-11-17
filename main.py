@@ -5,6 +5,7 @@ from middleware import LoggingMiddleware
 import model
 from database import engine
 from router import auth, doctors, patients, services, appointments, analytics
+from router import auth, doctors, patients, services, appointments, analytics, schedules
 
 templates = Jinja2Templates(directory="templates")
 #SQLite tables
@@ -21,6 +22,7 @@ app.include_router(patients.router)
 app.include_router(services.router)
 app.include_router(appointments.router)
 app.include_router(analytics.router)
+app.include_router(schedules.router)
 
 @app.get("/", response_class=HTMLResponse)
 def read_root(request: Request):

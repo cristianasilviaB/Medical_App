@@ -1,6 +1,6 @@
-from pydantic import BaseModel, ConfigDict
-from datetime import datetime
-from typing import List
+from datetime import datetime, time
+from typing import List, Literal, Optional
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 #  USER SCHEMAS 
 class UserCreate(BaseModel):
@@ -27,6 +27,26 @@ class DoctorBase(BaseModel):
     specialization: str
     phone: str
 
+class DoctorScheduleCreate(BaseModel):
+    day_of_week: int = Field(..., ge=0, le=6, description="0 = Monday, 6 = Sunday")
+    start_time: time
+    end_time: time
+
+    @model_validator(mode="after")
+    def validate_time_range(self):
+        if self.start_time >= self.end_time:
+            raise ValueError("start_time must be earlier than end_time")
+        return self
+
+
+class DoctorScheduleResponse(BaseModel):
+    id: int
+    doctor_id: int
+    day_of_week: int
+    start_time: time
+    end_time: time
+
+    model_config = ConfigDict(from_attributes=True)
 
 class DoctorCreate(DoctorBase):
     pass

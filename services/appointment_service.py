@@ -6,6 +6,7 @@ from repositories.appointment_repository import AppointmentRepository
 from repositories.doctor_repository import DoctorRepository
 from repositories.patient_repository import PatientRepository
 from repositories.service_repository import ServiceRepository
+from repositories.schedule_repository import ScheduleRepository
 import model
 import schemas
 
@@ -16,6 +17,7 @@ class AppointmentService:
         self.patient_repo = PatientRepository(db)
         self.doctor_repo = DoctorRepository(db)
         self.service_repo = ServiceRepository(db)
+        self.schedule_repo = ScheduleRepository(db)
 
     def get_all_appointments(
         self,
@@ -62,6 +64,27 @@ class AppointmentService:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Medical service not found",
             )
+
+        all_doctor_schedules = self.schedule_repo.get_by_doctor(appointment_schema.doctor_id)
+
+        if all_doctor_schedules:
+            appt_day = appointment_schema.appointment_date.weekday()
+            appt_start_time = appointment_schema.appointment_date.time()
+            appt_end_dt = appointment_schema.appointment_date + timedelta(minutes=service.duration_minutes)
+            appt_end_time = appt_end_dt.time()
+
+            day_shifts = [s for s in all_doctor_schedules if s.day_of_week == appt_day]
+            within_shift = any(
+                shift.start_time <= appt_start_time and appt_end_time <= shift.end_time
+                for shift in day_shifts
+            )
+            if not within_shift:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Appointment time is outside the doctor's working schedule",
+                )
+
+        
 
         # Calculate requested start and end time window
         requested_start = appointment_schema.appointment_date.replace(tzinfo=None)

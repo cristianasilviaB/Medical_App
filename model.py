@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import (Boolean, Column, DateTime,Float, ForeignKey, Integer, String,)
+from sqlalchemy import (Boolean, Column, DateTime,Float, ForeignKey, Integer, String,Time)
 from sqlalchemy.orm import relationship
 from database import Base
 
@@ -22,7 +22,18 @@ class Doctor(Base):
 
     patients = relationship("Patient", back_populates="doctor")
     appointments = relationship("Appointment", back_populates="doctor")
+    schedules = relationship("DoctorSchedule", back_populates="doctor", cascade="all, delete-orphan")
 
+class DoctorSchedule(Base):
+    __tablename__ = "doctor_schedules"
+
+    id = Column(Integer, primary_key=True, index=True)
+    doctor_id = Column(Integer, ForeignKey("doctors.id"), nullable=False)
+    day_of_week = Column(Integer, nullable=False)  # 0 = Monday ... 6 = Sunday
+    start_time = Column(Time, nullable=False)
+    end_time = Column(Time, nullable=False)
+
+    doctor = relationship("Doctor", back_populates="schedules")
 
 class Patient(Base):
     __tablename__ = "patients"
