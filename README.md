@@ -1,14 +1,16 @@
 # Medical Hospital Management System API
 
+[![FastAPI CI/CD Pipeline](https://github.com/cristianasilviaB/Medical_App/actions/workflows/ci.yml/badge.svg)](https://github.com/cristianasilviaB/Medical_App/actions/workflows/ci.yml)
+
 An enterprise-grade Python Backend API built with **FastAPI**, **SQLAlchemy**, and **PostgreSQL**, designed following a strict **3-Layer Architecture** (Routers, Services, Repositories) and containerized with **Docker Compose** for scalable hospital administration, patient record management, and clinical analytics.
 
 ## Key Technologies
 
 * **Framework:** FastAPI (Python 3.12)
 
-* **Database & ORM:** PostgreSQL 16 (Alpine), SQLAlchemy 2.0 (`psycopg2-binary` / `psycopg`)
+- **Database & Migrations:** PostgreSQL 16, SQLAlchemy 2.0, Alembic
 
-* **Containerization & Orchestration:** Docker, Docker Compose
+- **Containerization & CI/CD:** Docker, Docker Compose, GitHub Actions
 
 * **Data Validation & DTOs:** Pydantic v2
 
@@ -119,6 +121,9 @@ Medical_app/
 ├── schemas.py              # Data Transfer Objects (Pydantic Schemas)
 ├── pytest.ini              # Pytest & Code Coverage configuration
 └── req.txt                 # Project Dependencies
+├── .github/
+│   └── workflows/
+│       └── ci.yml      # GitHub Actions CI/CD pipeline (PostgreSQL, Alembic, Pytest, Docker)
 
 ```
 
@@ -186,3 +191,17 @@ Run all tests with coverage report:
 docker compose exec web python -m pytest
 
 ```
+
+## CI/CD Pipeline (GitHub Actions)
+
+This project uses **GitHub Actions** (`.github/workflows/ci.yml`) to automate testing, database migrations, and container build validation on every `push` and `pull_request` to the `main` branch:
+
+- **Continuous Integration (`test` job):**
+  - Spins up an isolated **PostgreSQL 16** service container (`postgres:16-alpine`) with automated health checks.
+  - Installs project dependencies in a **Python 3.12** environment with `pip` caching.
+  - Applies database schema migrations via **Alembic** (`alembic upgrade head`).
+  - Executes the full **Pytest** integration and unit test suite with code coverage reporting (`pytest-cov`).
+
+- **Continuous Delivery Check (`docker-build` job):**
+  - Runs automatically after all database migrations and tests pass (`needs: test`).
+  - Builds and validates the production **Docker** image using Docker Buildx and GitHub Actions layer caching (`type=gha`).
